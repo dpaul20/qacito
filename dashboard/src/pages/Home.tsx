@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge.tsx';
+import { Sparkline, isFlaky } from '../components/Sparkline.tsx';
 import './Home.css';
 
 interface RunSummary {
@@ -14,6 +15,44 @@ interface RunSummary {
   passed: number;
   failed: number;
   skipped: number;
+  history?: string[];
+}
+
+interface HealthData {
+  passRate: number;
+  runsToday: number;
+  openFailures: number;
+  flakySpecs: number;
+}
+
+function computeHealth(runs: RunSummary[]): HealthData {
+  if (runs.length === 0) {
+    return { passRate: 0, runsToday: 0, openFailures: 0, flakySpecs: 0 };
+  }
+  const passed = runs.filter((r) => r.status === 'passed').length;
+  const passRate = Math.round((passed / runs.length) * 100);
+  const openFailures = runs.filter((r) => r.failed > 0).length;
+  const flakySpecs = runs.filter((r) => isFlaky(r.history ?? [])).length;
+  return { passRate, runsToday: runs.length, openFailures, flakySpecs };
+}
+
+function HealthStrip({ health }: { health: HealthData }) {
+  const items = [
+    { value: `${health.passRate}%`, label: 'Pass rate', color: 'var(--color-pass)' },
+    { value: String(health.runsToday), label: 'Runs hoy', color: 'var(--color-text)' },
+    { value: String(health.openFailures), label: 'Fallas abiertas', color: 'var(--color-fail)' },
+    { value: `🎲 ${health.flakySpecs}`, label: 'Specs flaky', color: 'var(--color-blocked)' },
+  ];
+  return (
+    <div className="qa-health">
+      {items.map((it, i) => (
+        <div key={i} className="qa-health-item">
+          <span className="qa-health-value" style={{ color: it.color }}>{it.value}</span>
+          <span className="qa-health-label">{it.label}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function formatRelative(iso: string): string {
@@ -86,6 +125,8 @@ export default function Home() {
     );
   }
 
+  const health = computeHealth(runs);
+
   return (
     <div className="container">
       <div className="home-header">
@@ -99,6 +140,9 @@ export default function Home() {
         </div>
         <span className="run-count">{runs.length} runs</span>
       </div>
+
+      <HealthStrip health={health} />
+
       <div className="run-list">
         {runs.map((run) => (
           <Link
@@ -108,7 +152,12 @@ export default function Home() {
           >
             <div className="run-card-top">
               <span className="run-spec">{run.specPath.split(/[/\\]/).pop()}</span>
-              <StatusBadge status={run.status} pulse={run.status === 'running'} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {isFlaky(run.history ?? []) && (
+                  <span title="Flaky spec" style={{ fontSize: 13 }}>🎲 Flaky</span>
+                )}
+                <StatusBadge status={run.status} pulse={run.status === 'running'} />
+              </div>
             </div>
             <div className="run-project-row">
               <span className="run-project-name">{formatProjectName(run.projectRoot)}</span>
@@ -122,6 +171,11 @@ export default function Home() {
               <span className="run-counter pass">{run.passed} pasó</span>
               <span className="run-counter fail">{run.failed} falló</span>
               {run.skipped > 0 && <span className="run-counter skip">{run.skipped} skip</span>}
+              {(run.history ?? []).length > 0 && (
+                <span style={{ marginLeft: 'auto' }}>
+                  <Sparkline history={run.history as Array<'passed' | 'failed' | 'skipped'>} />
+                </span>
+              )}
             </div>
           </Link>
         ))}

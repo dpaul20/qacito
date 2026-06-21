@@ -5,6 +5,12 @@ import path from 'node:path';
 export type RunStatus = 'running' | 'passed' | 'failed' | 'timeout' | 'error' | 'blocked';
 export type TestStatus = 'pending' | 'running' | 'passed' | 'failed' | 'timedOut';
 
+export interface TestArtifacts {
+  screenshotPath?: string;
+  failingStep?: string;
+  traceUrl?: string;
+}
+
 export interface TestResult {
   id: string;
   title: string;
@@ -12,6 +18,9 @@ export interface TestResult {
   durationMs: number;
   error?: string;
   screenshotPath?: string;
+  regression?: boolean;
+  artifacts?: TestArtifacts;
+  fix?: string;
 }
 
 export interface RunSummary {
@@ -26,10 +35,13 @@ export interface RunSummary {
   failed: number;
   skipped: number;
   planId?: string;
+  history?: string[];
 }
 
 export interface RunDetail extends RunSummary {
   tests: TestResult[];
+  regressions?: string[];
+  recovered?: string[];
 }
 
 export const DEFAULT_RUNS_FILE = path.join(os.homedir(), '.qacito', 'runs.jsonl');
@@ -77,6 +89,9 @@ export async function completeRun(
     passed: number;
     failed: number;
     skipped: number;
+    history?: string[];
+    regressions?: string[];
+    recovered?: string[];
   },
   runsFilePath = DEFAULT_RUNS_FILE,
 ): Promise<void> {
@@ -88,8 +103,17 @@ export async function completeRun(
   run.passed = summary.passed;
   run.failed = summary.failed;
   run.skipped = summary.skipped;
+  if (summary.history !== undefined) run.history = summary.history;
+  if (summary.regressions !== undefined) run.regressions = summary.regressions;
+  if (summary.recovered !== undefined) run.recovered = summary.recovered;
   await fs.mkdir(path.dirname(runsFilePath), { recursive: true });
   await fs.appendFile(runsFilePath, JSON.stringify(run) + '\n', 'utf-8');
+}
+
+export function getPreviousCompletedRun(specPath: string, excludeRunId: string): RunDetail | undefined {
+  return [...runMap.values()]
+    .filter(r => r.specPath === specPath && r.id !== excludeRunId && r.status !== 'running')
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
 }
 
 export function getRun(id: string): RunDetail | undefined {

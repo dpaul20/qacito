@@ -1,8 +1,27 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge.tsx';
+import { DiffBlock } from '../components/DiffBlock.tsx';
 import { useWebSocket, type RunEvent } from '../hooks/useWebSocket.ts';
 import './Run.css';
+
+interface TestArtifacts {
+  url: string;
+  highlight: string;
+  failingStep?: string;
+  traceId?: string;
+}
+
+interface DiffLine {
+  type: 'add' | 'del' | 'ctx';
+  text: string;
+}
+
+interface TestFix {
+  filename: string;
+  summary?: string;
+  lines: DiffLine[];
+}
 
 interface TestResult {
   id: string;
@@ -10,6 +29,9 @@ interface TestResult {
   status: string;
   durationMs: number;
   error?: string;
+  regression?: boolean;
+  artifacts?: TestArtifacts;
+  fix?: TestFix;
 }
 
 interface RunDetail {
@@ -24,6 +46,9 @@ interface RunDetail {
   failed: number;
   skipped: number;
   tests: TestResult[];
+  history?: string[];
+  regressions?: string[];
+  recovered?: string[];
 }
 
 function formatMs(ms: number): string {
@@ -44,6 +69,101 @@ function useTimer(active: boolean): string {
   return active ? formatMs(elapsed) : '';
 }
 
+function RegressionBanner({ regressions = [], recovered = [] }: { regressions?: string[]; recovered?: string[] }) {
+  if (!regressions.length && !recovered.length) return null;
+  return (
+    <div className="qa-regress">
+      {regressions.length > 0 && (
+        <div className="qa-regress-block qa-regress-bad">
+          <span className="qa-regress-head">🔴 {regressions.length} regresión{regressions.length > 1 ? 'es' : ''} <span className="qa-regress-sub">pasaban antes, ahora fallan</span></span>
+          <ul className="qa-regress-list">{regressions.map((t, i) => <li key={i}>{t}</li>)}</ul>
+        </div>
+      )}
+      {recovered.length > 0 && (
+        <div className="qa-regress-block qa-regress-good">
+          <span className="qa-regress-head">🟢 {recovered.length} recuperado{recovered.length > 1 ? 's' : ''} <span className="qa-regress-sub">fallaban antes, ahora pasan</span></span>
+          <ul className="qa-regress-list">{recovered.map((t, i) => <li key={i}>{t}</li>)}</ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface TestRowProps {
+  test: TestResult;
+  expanded: boolean;
+  onToggle: () => void;
+}
+
+function TestRow({ test, expanded, onToggle }: TestRowProps) {
+  const canExpand = !!(test.error ?? test.artifacts ?? test.fix);
+  return (
+    <div className="test-row">
+      <button
+        className="test-row-header"
+        onClick={canExpand ? onToggle : undefined}
+        style={canExpand ? undefined : { cursor: 'default' }}
+      >
+        <StatusBadge status={test.status} pulse={test.status === 'running'} />
+        <span className="test-title">{test.title}</span>
+        {test.regression && <span style={{ fontSize: 11, color: 'var(--fail-fg)', fontWeight: 600, padding: '2px 6px', background: 'var(--fail-bg)', borderRadius: 4 }}>regresión</span>}
+        <span className="test-duration">{test.durationMs > 0 ? formatMs(test.durationMs) : ''}</span>
+        {canExpand && <span className="expand-icon">{expanded ? '▲' : '▼'}</span>}
+      </button>
+      {expanded && canExpand && (
+        <div className="test-error" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {test.error && (
+            <pre>{test.error.slice(0, 600)}</pre>
+          )}
+
+          {test.artifacts && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {/* Screenshot frame */}
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ padding: '6px 10px', background: 'var(--gray-100)', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span style={{ display: 'flex', gap: 4 }}>
+                    {['#f87171', '#fbbf24', '#34d399'].map((c) => (
+                      <i key={c} style={{ width: 8, height: 8, borderRadius: '50%', background: c, display: 'inline-block' }} />
+                    ))}
+                  </span>
+                  <code style={{ fontSize: 10, color: 'var(--color-muted)' }}>{test.artifacts.url}</code>
+                </div>
+                <div style={{ position: 'relative', height: 80, background: '#f9fafb' }}>
+                  <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, height: 28, borderRadius: 6, border: '2px dashed var(--color-fail)', background: 'rgba(239,68,68,0.06)', display: 'flex', alignItems: 'center', paddingLeft: 8 }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--fail-fg)' }}>✕ {test.artifacts.highlight}</span>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {test.artifacts.failingStep && (
+                  <div style={{ fontSize: 12 }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Step que falló</div>
+                    <code style={{ marginTop: 4, display: 'block', fontSize: 11 }}>{test.artifacts.failingStep}</code>
+                  </div>
+                )}
+                {test.artifacts.traceId && (
+                  <a href="#" onClick={(e) => e.preventDefault()} style={{ fontSize: 13, color: 'var(--color-primary)', fontWeight: 500 }}>Ver trace de Playwright ↗</a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {test.fix && (
+            <div style={{ border: '1px solid var(--color-border)', borderRadius: 12, padding: 16, background: 'var(--gray-50)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>🧪 Claude propone un fix</span>
+                <button className="qa-apply-fix-btn">Aplicar</button>
+              </div>
+              {test.fix.summary && <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--color-subtle)' }}>{test.fix.summary}</p>}
+              <DiffBlock filename={test.fix.filename} lines={test.fix.lines} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Run() {
   const { id } = useParams<{ id: string }>();
   const [params] = useSearchParams();
@@ -54,10 +174,17 @@ export default function Run() {
   const [liveSummary, setLiveSummary] = useState({ passed: 0, failed: 0, pending: 0 });
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [queued, setQueued] = useState<'all' | 'failed' | null>(null);
   const isLive = liveStatus === 'running';
   const timer = useTimer(isLive);
 
   const { events } = useWebSocket({ runId: id ?? '', enabled: isLive });
+
+  useEffect(() => {
+    if (!queued) return;
+    const timeout = setTimeout(() => setQueued(null), 2200);
+    return () => clearTimeout(timeout);
+  }, [queued]);
 
   // Load initial state
   useEffect(() => {
@@ -142,6 +269,13 @@ export default function Run() {
           <h1 className="run-title">{specName}</h1>
           <p className="run-path">{run.specPath}</p>
           <p className="run-project">Proyecto: <code>{run.projectRoot}</code></p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button className="qa-rerun-btn" onClick={() => setQueued('all')}>↻ Re-ejecutar</button>
+            {run.failed > 0 && (
+              <button className="qa-rerun-btn qa-rerun-primary" onClick={() => setQueued('failed')}>↻ Solo los que fallaron</button>
+            )}
+          </div>
+          {queued && <span className="qa-queued">✓ {queued === 'failed' ? `${run.failed} tests` : 'Run'} encolado</span>}
         </div>
         <div className="run-header-right">
           <StatusBadge status={liveStatus} pulse={isLive} />
@@ -165,6 +299,8 @@ export default function Run() {
         </div>
       </div>
 
+      <RegressionBanner regressions={run.regressions} recovered={run.recovered} />
+
       {testList.length === 0 && isLive && (
         <div className="card" style={{ textAlign: 'center', padding: '32px', color: 'var(--color-muted)' }}>
           <p>Esperando resultados...</p>
@@ -175,22 +311,12 @@ export default function Run() {
         <div className="card test-list">
           <h2>Resultados</h2>
           {testList.map((t) => (
-            <div key={t.id} className="test-row">
-              <button
-                className="test-row-header"
-                onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
-              >
-                <StatusBadge status={t.status} pulse={t.status === 'running'} />
-                <span className="test-title">{t.title}</span>
-                <span className="test-duration">{t.durationMs > 0 ? formatMs(t.durationMs) : ''}</span>
-                {t.error && <span className="expand-icon">{expandedId === t.id ? '▲' : '▼'}</span>}
-              </button>
-              {expandedId === t.id && t.error && (
-                <div className="test-error">
-                  <pre>{t.error.slice(0, 600)}</pre>
-                </div>
-              )}
-            </div>
+            <TestRow
+              key={t.id}
+              test={t}
+              expanded={expandedId === t.id}
+              onToggle={() => setExpandedId(expandedId === t.id ? null : t.id)}
+            />
           ))}
         </div>
       )}

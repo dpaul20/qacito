@@ -86,8 +86,8 @@ test.describe('extractVariables', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('getApiTemplateHandler', () => {
-  test('substitutes {{ENDPOINT}} with the provided endpoint', () => {
-    const output = getApiTemplateHandler({
+  test('substitutes {{ENDPOINT}} with the provided endpoint', async () => {
+    const output = await getApiTemplateHandler({
       method: 'GET',
       endpoint: '/api/users',
       expectedStatus: 200,
@@ -96,8 +96,8 @@ test.describe('getApiTemplateHandler', () => {
     expect(output.template).not.toContain('{{ENDPOINT}}');
   });
 
-  test('substitutes {{EXPECTED_STATUS}} with the provided status code', () => {
-    const output = getApiTemplateHandler({
+  test('substitutes {{EXPECTED_STATUS}} with the provided status code', async () => {
+    const output = await getApiTemplateHandler({
       method: 'POST',
       endpoint: '/api/items',
       expectedStatus: 201,
@@ -106,8 +106,8 @@ test.describe('getApiTemplateHandler', () => {
     expect(output.template).not.toContain('{{EXPECTED_STATUS}}');
   });
 
-  test('returns the method as the "type" field', () => {
-    const output = getApiTemplateHandler({
+  test('returns the method as the "type" field', async () => {
+    const output = await getApiTemplateHandler({
       method: 'DELETE',
       endpoint: '/api/items/1',
       expectedStatus: 204,
@@ -115,8 +115,8 @@ test.describe('getApiTemplateHandler', () => {
     expect(output.type).toBe('DELETE');
   });
 
-  test('variables list does NOT include already-substituted ENDPOINT or EXPECTED_STATUS', () => {
-    const output = getApiTemplateHandler({
+  test('variables list does NOT include already-substituted ENDPOINT or EXPECTED_STATUS', async () => {
+    const output = await getApiTemplateHandler({
       method: 'GET',
       endpoint: '/api/health',
       expectedStatus: 200,
@@ -125,8 +125,8 @@ test.describe('getApiTemplateHandler', () => {
     expect(output.variables).not.toContain('{{EXPECTED_STATUS}}');
   });
 
-  test('variables list contains remaining unresolved placeholders (e.g. BASE_URL)', () => {
-    const output = getApiTemplateHandler({
+  test('variables list contains remaining unresolved placeholders (e.g. BASE_URL)', async () => {
+    const output = await getApiTemplateHandler({
       method: 'GET',
       endpoint: '/api/health',
       expectedStatus: 200,
@@ -136,10 +136,10 @@ test.describe('getApiTemplateHandler', () => {
     expect(output.variables).toContain('{{AUTH_TOKEN}}');
   });
 
-  test('works for all supported HTTP methods', () => {
+  test('works for all supported HTTP methods', async () => {
     const methods: TemplateMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'error'];
     for (const method of methods) {
-      const output = getApiTemplateHandler({
+      const output = await getApiTemplateHandler({
         method,
         endpoint: '/api/test',
         expectedStatus: 200,

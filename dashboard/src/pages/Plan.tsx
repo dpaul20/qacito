@@ -11,6 +11,12 @@ interface TestCase {
   category: string;
 }
 
+interface Coverage {
+  flowsFound: number;
+  flowsCovered: number;
+  uncovered: string[];
+}
+
 interface TestPlan {
   id: string;
   projectName: string;
@@ -20,6 +26,26 @@ interface TestPlan {
   testCases: TestCase[];
   createdAt: string;
   specsDir: string;
+  coverage?: Coverage;
+}
+
+function CoverageBlock({ coverage }: { coverage: Coverage }) {
+  const pct = Math.round((coverage.flowsCovered / coverage.flowsFound) * 100);
+  return (
+    <div className="qa-coverage">
+      <div className="qa-coverage-head">
+        <span className="qa-coverage-title">Cobertura de flujos</span>
+        <span className="qa-coverage-num">{coverage.flowsCovered}/{coverage.flowsFound} · {pct}%</span>
+      </div>
+      <div className="qa-coverage-bar"><span style={{ width: `${pct}%` }} /></div>
+      {coverage.uncovered.length > 0 && (
+        <div className="qa-coverage-gaps">
+          <span className="qa-coverage-gaps-label">Sin cobertura:</span>
+          {coverage.uncovered.map((f, i) => <span key={i} className="qa-gap-chip">{f}</span>)}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Plan() {
@@ -88,6 +114,7 @@ export default function Plan() {
             <span key={t} className="plan-tag">{t}</span>
           ))}
         </div>
+        {plan.coverage && <CoverageBlock coverage={plan.coverage} />}
       </div>
 
       <div className="tc-list">

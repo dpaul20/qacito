@@ -120,6 +120,8 @@ export interface TestFailure {
   message: string;
   /** Stack trace, truncated to 2 000 characters. */
   stack?: string;
+  screenshotPath?: string;
+  tracePath?: string;
 }
 
 /** Normalised result returned by `spawnPlaywright`. */
@@ -150,9 +152,16 @@ interface PwError {
   value?: string;
 }
 
+interface PwAttachment {
+  name?: string;
+  path?: string;
+  contentType?: string;
+}
+
 interface PwTestResult {
   status?: string;
   errors?: PwError[];
+  attachments?: PwAttachment[];
 }
 
 interface PwTestCase {
@@ -227,6 +236,10 @@ function extractFailures(suites: PwSuite[] | undefined, fileHint = ''): TestFail
       );
       const firstError = firstFailedResult?.errors?.[0];
 
+      const attachments = firstFailedResult?.attachments ?? [];
+      const screenshot = attachments.find(a => a.name === 'screenshot' && a.path);
+      const trace = attachments.find(a => a.name === 'trace' && a.path);
+
       failures.push({
         title: spec.title ?? '(unnamed)',
         file,
@@ -234,6 +247,8 @@ function extractFailures(suites: PwSuite[] | undefined, fileHint = ''): TestFail
         ...(firstError?.stack
           ? { stack: truncate(firstError.stack, MAX_STACK_CHARS) }
           : {}),
+        ...(screenshot?.path ? { screenshotPath: screenshot.path } : {}),
+        ...(trace?.path ? { tracePath: trace.path } : {}),
       });
     }
   }

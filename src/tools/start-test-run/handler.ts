@@ -7,11 +7,13 @@ import {
   createRun,
   completeRun,
   upsertTest,
+  getRun,
+  getPreviousCompletedRun,
   type TestStatus,
 } from '../../dashboard-server/run-store.js';
 import { broadcast } from '../../dashboard-server/ws-broadcaster.js';
 import { getDashboardUrl } from '../../dashboard-server/index.js';
-import { appendHistory, type HistoryEntry } from '../../shared/history.js';
+import { appendHistory, readHistory, type HistoryEntry } from '../../shared/history.js';
 import type { StartTestRunInput, StartTestRunOutput } from './schema.js';
 import { discoverStorageState, resolveAuthOptions, type AuthConfig } from '../../shared/auth-context.js';
 import { writeQacitoConfig } from '../analyze-project/handler.js';
@@ -101,6 +103,53 @@ export async function startTestRunHandler(
         : result.status === 'error'                 ? 'error'
         : 'failed';
 
+      // Read history for this spec (past entries, excluding the current run)
+      const pastEntries = await readHistory({ specPath: resolvedSpec, limit: 10 }).catch(() => []);
+      const history = [...pastEntries.map(e => e.status), finalStatus];
+
+      // Get previous run's test results for regression analysis
+      const prevRun = getPreviousCompletedRun(resolvedSpec, runId);
+      const prevFailedTitles = new Set(
+        (prevRun?.tests ?? [])
+          .filter(t => t.status === 'failed' || t.status === 'timedOut')
+          .map(t => t.title),
+      );
+      const currentRun = getRun(runId);
+      const currentTests = currentRun?.tests ?? [];
+      const currentFailedTitles = new Set(
+        currentTests.filter(t => t.status === 'failed' || t.status === 'timedOut').map(t => t.title),
+      );
+
+      // regressions: failing now but was passing before
+      // recovered: was failing before but passing now
+      const regressions: string[] = [];
+      const recovered: string[] = [];
+      if (prevRun) {
+        for (const title of currentFailedTitles) {
+          if (!prevFailedTitles.has(title)) regressions.push(title);
+        }
+        for (const title of prevFailedTitles) {
+          if (!currentFailedTitles.has(title)) recovered.push(title);
+        }
+      }
+
+      // Enrich each failed test with artifacts from result.failures
+      const regressionSet = new Set(regressions);
+      for (const failure of result.failures) {
+        const test = currentTests.find(t => t.title === failure.title);
+        if (test) {
+          upsertTest(runId, {
+            ...test,
+            error: failure.message,
+            regression: regressionSet.has(failure.title),
+            artifacts: {
+              ...(failure.screenshotPath ? { screenshotPath: failure.screenshotPath } : {}),
+              ...(failure.tracePath ? { traceUrl: `file://${failure.tracePath}` } : {}),
+            },
+          });
+        }
+      }
+
       await completeRun(runId, {
         status:     finalStatus,
         durationMs: result.durationMs,
@@ -108,6 +157,9 @@ export async function startTestRunHandler(
         passed:     result.summary.passed,
         failed:     result.summary.failed,
         skipped:    result.summary.skipped,
+        history,
+        regressions,
+        recovered,
       });
 
       broadcast(runId, {
