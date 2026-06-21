@@ -1,0 +1,147 @@
+.run-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.run-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.back-link {
+  font-size: 13px;
+  color: var(--color-muted);
+  transition: color 0.15s;
+}
+.back-link:hover { color: var(--color-text); }
+
+.run-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.run-path {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.run-project {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.run-project code {
+  color: var(--color-running);
+}
+
+.run-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.run-timer {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.summary-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-value {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.summary-box.pass .summary-value { color: var(--color-pass); }
+.summary-box.fail .summary-value { color: var(--color-fail); }
+.summary-box.pending .summary-value { color: var(--color-muted); }
+
+.test-list h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 12px;
+}
+
+.test-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.test-row:first-of-type {
+  border-top: none;
+}
+
+.test-row-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.test-row-header:hover { opacity: 0.8; }
+
+.test-title {
+  flex: 1;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.test-duration {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.expand-icon {
+  font-size: 10px;
+  color: var(--color-muted);
+}
+
+.test-error {
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.test-error pre {
+  font-size: 12px;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+}

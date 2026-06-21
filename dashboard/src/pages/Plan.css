@@ -1,0 +1,135 @@
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.plan-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.plan-meta {
+  font-size: 13px;
+  color: var(--color-muted);
+  margin-top: 4px;
+}
+
+.plan-project-root {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.plan-project-root code {
+  color: var(--color-running);
+}
+
+.plan-warning {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9a3412;
+}
+
+.plan-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.plan-tag {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: var(--color-running);
+  font-weight: 600;
+}
+
+.tc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tc-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tc-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tc-header:hover { background: var(--color-bg); }
+
+.tc-id {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+.tc-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tc-category {
+  font-size: 11px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.tc-chevron {
+  font-size: 10px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.tc-body {
+  padding: 0 20px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.tc-description {
+  font-size: 13px;
+  color: var(--color-muted);
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+.tc-url {
+  font-size: 13px;
+  margin-top: 8px;
+  color: var(--color-muted);
+}
+
+.tc-url code {
+  color: var(--color-running);
+}
+
+.tc-steps {
+  margin-top: 12px;
+  padding-left: 20px;
+}
+
+.tc-steps li {
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.8;
+}

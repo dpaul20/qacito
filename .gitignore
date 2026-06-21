@@ -1,0 +1,14 @@
+dist/
+node_modules/
+mcpb-staging/
+*.mcpb
+.env
+test-results/
+server-stderr.txt
+.claude/
+.atl/
+.gga
+openspec/
+qacito-report-*
+qacito-self-eval-report.json
+qacito_tests/

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
+  "manifest_version": "0.4",
+  "name": "qacito",
+  "display_name": "QAcito — Local QA for Claude",
+  "version": "0.1.0",
+  "description": "Autonomous local QA platform. Drives Playwright tests, coverage, flakiness detection, and accessibility audits — all from Claude Desktop. Supports URL-first black-box testing mode — discovers routes via sitemap or Playwright crawl, supports Cypress test runner, and generates specs from Figma designs via the Figma MCP.",
+  "author": { "name": "QAcito" },
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
+      "env": {
+        "QACITO_DEFAULT_PROJECT_ROOT": "${user_config.default_project_root}"
+      }
+    }
+  },
+  "user_config": {
+    "default_project_root": {
+      "type": "directory",
+      "title": "Default project folder (optional)",
+      "description": "Convenience default shown in prompts. Tools still accept projectRoot per call.",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": ["darwin", "linux", "win32"]
+  }
+}

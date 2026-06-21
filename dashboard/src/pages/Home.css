@@ -1,0 +1,100 @@
+.home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.home-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.project-context {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.project-context code {
+  color: var(--color-running);
+}
+
+.run-count {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.run-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.run-card {
+  display: block;
+  padding: 16px 20px;
+  border-radius: 12px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.run-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: #d1d5db;
+}
+
+.run-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.run-spec {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.run-project-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.run-project-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-running);
+}
+
+.run-project-path {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.run-card-bottom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.run-meta {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.run-counter {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.run-counter.pass { background: #dcfce7; color: #15803d; }
+.run-counter.fail { background: #fee2e2; color: #b91c1c; }
+.run-counter.skip { background: #f3f4f6; color: #4b5563; }

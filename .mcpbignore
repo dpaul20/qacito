@@ -1,0 +1,11 @@
+src/
+tests/
+test-results/
+openspec/
+dashboard/
+mcpb-staging/
+.git/
+*.ts
+*.md
+*.mcpb
+node_modules/
