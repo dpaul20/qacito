@@ -1,4 +1,5 @@
 dist/
+dashboard/dist/
 src/dashboard-server/public/
 node_modules/
 mcpb-staging/
