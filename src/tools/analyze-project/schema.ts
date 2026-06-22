@@ -3,6 +3,7 @@ import { AuthConfigSchema } from '../../shared/auth-context.js';
 
 export const AnalyzeProjectInputSchema = z.object({
   projectRoot: z.string().min(1, 'projectRoot must not be empty'),
+  baseUrl:     z.string().url().optional(),
   auth:        AuthConfigSchema.optional(),
 });
 
