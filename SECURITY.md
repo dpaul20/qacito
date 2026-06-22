@@ -20,6 +20,6 @@ We will acknowledge receipt and provide a follow-up timeline after triage.
 
 ## Known deferred vulnerabilities
 
-| Package | GHSA                | Severity | Reason deferred                    | Fix target       |
-|---------|---------------------|----------|------------------------------------|------------------|
-| esbuild | GHSA-67mh-4wv8-2f99 | moderate | Dev server only, not in prod build | vite@8 migration |
+| Package | GHSA                | Severity | Reason deferred                                                           | Fix target       |
+|---------|---------------------|----------|---------------------------------------------------------------------------|------------------|
+| esbuild | GHSA-67mh-4wv8-2f99 | moderate | Dev server only, not in prod build; CI audits dashboard with `--omit=dev` | vite@8 migration |
