@@ -17,7 +17,8 @@
     "pack:mcpb": "npx @anthropic-ai/mcpb pack",
     "sign:mcpb": "npx @anthropic-ai/mcpb sign qacito.mcpb",
     "test": "npx playwright test --reporter=json",
-    "batch": "node dist/batch/index.js"
+    "batch": "node dist/batch/index.js",
+    "install-hooks": "sh scripts/install-hooks.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
