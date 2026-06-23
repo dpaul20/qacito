@@ -177,7 +177,97 @@ test.describe('discoverRoutesHandler — external URL filtered', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Scenario 4: invalid URL throws InvalidUrlError
+// Scenario 4: filesystem fallback for SPAs (no <a> links in initial HTML)
+// ---------------------------------------------------------------------------
+
+test.describe('discoverRoutesHandler — filesystem fallback (SPA)', () => {
+  let server: http.Server;
+  const PORT = 47205;
+  let tmpDir: string;
+
+  test.beforeEach(async () => {
+    tmpDir = makeTempDir();
+    server = await startServer((req, res) => {
+      if (req.url === '/sitemap.xml') {
+        res.writeHead(404);
+        res.end();
+      } else {
+        // SPA shell — no <a> links
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end('<!DOCTYPE html><html><body><div id="root"></div></body></html>');
+      }
+    }, PORT);
+
+    // Next.js App Router structure under tmpDir
+    fs.mkdirSync(path.join(tmpDir, 'app', 'dashboard'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'app', 'settings'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'app', 'page.tsx'), '// home');
+    fs.writeFileSync(path.join(tmpDir, 'app', 'dashboard', 'page.tsx'), '// dashboard');
+    fs.writeFileSync(path.join(tmpDir, 'app', 'settings', 'page.tsx'), '// settings');
+  });
+
+  test.afterEach(async () => {
+    await stopServer(server);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test('DR-FS1: discovers App Router pages when crawl returns only root', async () => {
+    const result = await discoverRoutesHandler({
+      baseUrl: `http://127.0.0.1:${PORT}`,
+      projectRoot: tmpDir,
+      maxDepth: 2,
+      maxUrls: 100,
+      timeoutMs: 30_000,
+    });
+
+    expect(['crawl+filesystem', 'filesystem']).toContain(result.source);
+    const paths = result.urls.map((u) => new URL(u).pathname);
+    expect(paths).toContain('/dashboard');
+    expect(paths).toContain('/settings');
+    expect(result.warnings.some((w) => w.includes('filesystem'))).toBe(true);
+  });
+
+  test('DR-FS2: no filesystem fallback when projectRoot is omitted', async () => {
+    const result = await discoverRoutesHandler({
+      baseUrl: `http://127.0.0.1:${PORT}`,
+      maxDepth: 2,
+      maxUrls: 100,
+      timeoutMs: 30_000,
+    });
+
+    expect(result.source).toBe('crawl');
+    expect(result.urls.length).toBeLessThanOrEqual(1);
+  });
+
+  test('DR-FS3: discovers Pages Router pages when no App Router directory exists', async () => {
+    const pagesRoot = makeTempDir();
+    fs.mkdirSync(path.join(pagesRoot, 'pages'), { recursive: true });
+    fs.writeFileSync(path.join(pagesRoot, 'pages', 'index.tsx'), '// home');
+    fs.writeFileSync(path.join(pagesRoot, 'pages', 'about.tsx'), '// about');
+    fs.writeFileSync(path.join(pagesRoot, 'pages', '_app.tsx'), '// _app');
+
+    try {
+      const result = await discoverRoutesHandler({
+        baseUrl: `http://127.0.0.1:${PORT}`,
+        projectRoot: pagesRoot,
+        maxDepth: 2,
+        maxUrls: 100,
+        timeoutMs: 30_000,
+      });
+
+      expect(['crawl+filesystem', 'filesystem']).toContain(result.source);
+      const paths = result.urls.map((u) => new URL(u).pathname);
+      expect(paths).toContain('/about');
+      // _app.tsx is an internal Next.js file and must be excluded
+      expect(paths).not.toContain('/_app');
+    } finally {
+      fs.rmSync(pagesRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 5: invalid URL throws InvalidUrlError
 // ---------------------------------------------------------------------------
 
 test.describe('discoverRoutesHandler — invalid URL', () => {
