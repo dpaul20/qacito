@@ -59,14 +59,21 @@ async function globRoutes(dir: string, pattern: string): Promise<string[]> {
   return results;
 }
 
+const PRIMARY_SCRIPT_NAMES = new Set(['dev', 'start', 'serve', 'preview', 'develop']);
+
 function inferBaseUrl(pkg: PackageJson | null): string {
   if (!pkg?.scripts) return 'http://localhost:3000';
-  const allScripts = Object.values(pkg.scripts).join(' ');
+  // Only scan primary dev/start scripts — auxiliary tools like Storybook use
+  // different script names and their ports must not override the app's port.
+  const primaryValues = Object.entries(pkg.scripts)
+    .filter(([name]) => PRIMARY_SCRIPT_NAMES.has(name))
+    .map(([, value]) => value)
+    .join(' ');
   const portMatch =
-    /localhost:(\d{4,5})/.exec(allScripts) ??
-    /-p\s+(\d{4,5})/.exec(allScripts) ??
-    /--port[=\s]+(\d{4,5})/.exec(allScripts);
-  if (portMatch) return `http://localhost:${portMatch[1] ?? '3000'}`;
+    /localhost:(\d{4,5})/.exec(primaryValues) ??
+    /-p\s+(\d{4,5})/.exec(primaryValues) ??
+    /--port[=\s]+(\d{4,5})/.exec(primaryValues);
+  if (portMatch?.[1]) return `http://localhost:${portMatch[1]}`;
   return 'http://localhost:3000';
 }
 
@@ -300,7 +307,7 @@ export async function analyzeProjectHandler(
 
   const pkg = await readJsonFile<PackageJson>(path.join(projectRoot, 'package.json'));
   const projectName = pkg?.name ?? path.basename(projectRoot);
-  const baseUrl = inferBaseUrl(pkg);
+  const baseUrl = input.baseUrl ?? inferBaseUrl(pkg);
   const techStack = detectTechStack(pkg);
 
   // Detect router type and collect route files

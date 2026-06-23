@@ -1,6 +1,9 @@
+import path from 'node:path';
+import fs from 'node:fs/promises';
 import { chromium } from 'playwright';
 import type { DiscoverRoutesInput, DiscoverRoutesOutput } from './schema.js';
 import { resolveAuthOptions, resolveBearerHeader, discoverStorageState, type AuthConfig } from '../../shared/auth-context.js';
+import { resolveSafe } from '../../shared/sandbox.js';
 
 export class InvalidUrlError extends Error {
   readonly code = 'InvalidUrl';
@@ -34,7 +37,25 @@ export async function discoverRoutesHandler(
     return crawl(baseUrlParsed, input.maxDepth, input.maxUrls, effectiveAuth);
   };
 
-  return Promise.race([impl(), rejectAfter(input.timeoutMs)]);
+  const result = await Promise.race([impl(), rejectAfter(input.timeoutMs)]);
+
+  if (input.projectRoot !== undefined && result.urls.length <= 1) {
+    const absRoot = resolveSafe(path.resolve(input.projectRoot), '.');
+    const fsUrls = await filesystemRoutes(absRoot, input.baseUrl);
+    if (fsUrls.length > 0) {
+      const merged = [...new Set([...result.urls, ...fsUrls])];
+      return {
+        urls: merged,
+        source: result.urls.length === 0 ? 'filesystem' : 'crawl+filesystem',
+        warnings: [
+          ...result.warnings,
+          'Crawl found few routes — filesystem analysis used as fallback',
+        ],
+      };
+    }
+  }
+
+  return result;
 }
 
 async function trySitemap(baseUrl: string, maxUrls: number, auth?: AuthConfig): Promise<string[] | null> {
@@ -176,4 +197,75 @@ function rejectAfter(ms: number): Promise<never> {
   return new Promise((_, reject) =>
     setTimeout(() => reject(new Error(`discoverRoutes timed out after ${ms}ms`)), ms),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Filesystem route scanning (SPA fallback for Next.js App / Pages Router)
+// ---------------------------------------------------------------------------
+
+async function walkForPattern(
+  dir: string,
+  match: (name: string) => boolean,
+  depth = 0,
+): Promise<string[]> {
+  if (depth > 6) return [];
+  let entries: import('node:fs').Dirent[];
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch { return []; }
+  const results: string[] = [];
+  for (const entry of entries) {
+    if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...await walkForPattern(full, match, depth + 1));
+    } else if (match(entry.name)) {
+      results.push(full);
+    }
+    if (results.length >= 50) break;
+  }
+  return results;
+}
+
+async function filesystemRoutes(projectRoot: string, baseUrl: string): Promise<string[]> {
+  const urls = new Set<string>();
+
+  // App Router: src/app/**/page.tsx or app/**/page.tsx
+  for (const appDir of [path.join(projectRoot, 'app'), path.join(projectRoot, 'src', 'app')]) {
+    const files = await walkForPattern(appDir, (n) => /^page\.[jt]sx?$/.test(n));
+    if (files.length === 0) continue;
+    for (const file of files) {
+      const rel = path.relative(appDir, file).replace(/\\/g, '/');
+      const segment = rel
+        .replace(/\/page\.[jt]sx?$/, '')
+        .replace(/^page\.[jt]sx?$/, '')
+        .replace(/\(.*?\)\//g, '')
+        .replace(/\[.*?\]/g, ':param');
+      if (!segment.includes(':param')) {
+        urls.add(segment ? `${baseUrl}/${segment}` : baseUrl);
+      }
+    }
+    break;
+  }
+
+  // Pages Router fallback
+  if (urls.size === 0) {
+    for (const pagesDir of [path.join(projectRoot, 'pages'), path.join(projectRoot, 'src', 'pages')]) {
+      const files = await walkForPattern(pagesDir, (n) => /\.[jt]sx?$/.test(n));
+      if (files.length === 0) continue;
+      for (const file of files) {
+        const rel = path.relative(pagesDir, file).replace(/\\/g, '/');
+        const segment = rel
+          .replace(/\.[^.]+$/, '')
+          .replace(/\[.*?\]/g, ':param')
+          .replace(/\/index$/, '');
+        if (!segment.includes(':param') && !segment.startsWith('api/')) {
+          urls.add(segment && segment !== 'index' ? `${baseUrl}/${segment}` : baseUrl);
+        }
+      }
+      break;
+    }
+  }
+
+  return [...urls];
 }
