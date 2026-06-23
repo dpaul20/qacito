@@ -196,6 +196,45 @@ test.describe('analyze-project handler', () => {
     }
   });
 
+  test('AP-10: storybook port is not picked over next dev default', async () => {
+    const root = await makeTempDir();
+    await fs.writeFile(
+      path.join(root, 'package.json'),
+      JSON.stringify({
+        name: 'spa-app',
+        dependencies: { next: '16.0.0' },
+        scripts: { dev: 'next dev', storybook: 'storybook dev -p 6006' },
+      }),
+      'utf-8',
+    );
+
+    try {
+      const output = await analyzeProjectHandler(root, { projectRoot: root });
+      expect(output.baseUrl).toBe('http://localhost:3000');
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test('AP-11: explicit baseUrl override takes precedence over inferred port', async () => {
+    const root = await makeTempDir();
+    await fs.writeFile(
+      path.join(root, 'package.json'),
+      JSON.stringify({ name: 'override-app', scripts: { dev: 'next dev -p 4000' } }),
+      'utf-8',
+    );
+
+    try {
+      const output = await analyzeProjectHandler(root, {
+        projectRoot: root,
+        baseUrl: 'http://localhost:9999',
+      });
+      expect(output.baseUrl).toBe('http://localhost:9999');
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
   test('AP-9: rejects traversal paths before filesystem access', async () => {
     const root = await makeTempDir();
     await makeGenericProject(root);
