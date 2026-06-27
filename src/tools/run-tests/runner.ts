@@ -265,6 +265,29 @@ function extractFailures(suites: PwSuite[] | undefined, fileHint = ''): TestFail
   return failures;
 }
 
+type TestStatus = 'passed' | 'timedOut' | 'pending' | 'failed';
+
+function mapTestStatus(rawStatus: string | undefined): TestStatus {
+  if (rawStatus === 'passed' || rawStatus === 'expected') return 'passed';
+  if (rawStatus === 'timedOut') return 'timedOut';
+  if (rawStatus === 'skipped') return 'pending';
+  return 'failed';
+}
+
+function specToEvent(spec: PwTestCase): RunEvent {
+  // spec.tests[0] is the first project run; its last result holds the real status + duration.
+  const firstTest = spec.tests?.[0];
+  const lastResult = firstTest?.results?.at(-1);
+  return {
+    type: 'test_result',
+    payload: {
+      title: spec.title ?? '(unnamed)',
+      status: mapTestStatus(lastResult?.status ?? firstTest?.status),
+      durationMs: lastResult?.duration ?? 0,
+    },
+  };
+}
+
 /**
  * Walks the nested `suites` tree and returns a `test_result` event for every
  * test case. Used after JSON report parsing to populate the run store reliably,
@@ -277,23 +300,7 @@ function extractTestEvents(suites: PwSuite[] | undefined): RunEvent[] {
   for (const suite of suites) {
     if (suite.suites) events.push(...extractTestEvents(suite.suites));
     for (const spec of suite.specs ?? []) {
-      const title = spec.title ?? '(unnamed)';
-      // spec.tests[0] is the first project run; its last result holds the real status + duration.
-      const firstTest = spec.tests?.[0];
-      const results = firstTest?.results ?? [];
-      const lastResult = results[results.length - 1];
-      const rawStatus = lastResult?.status ?? firstTest?.status;
-      const status =
-        rawStatus === 'passed'     ? 'passed'   :
-        rawStatus === 'expected'   ? 'passed'   :
-        rawStatus === 'timedOut'   ? 'timedOut' :
-        rawStatus === 'skipped'    ? 'pending'  :
-        rawStatus === 'unexpected' ? 'failed'   :
-        'failed';
-      events.push({
-        type: 'test_result',
-        payload: { title, status, durationMs: lastResult?.duration ?? 0 },
-      });
+      events.push(specToEvent(spec));
     }
   }
   return events;

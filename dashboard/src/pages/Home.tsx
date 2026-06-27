@@ -38,7 +38,7 @@ function computeHealth(runs: RunSummary[]): HealthData {
   };
 }
 
-function HealthStrip({ health, scoped, projectCount }: { health: HealthData; scoped: boolean; projectCount: number }) {
+function HealthStrip({ health, scoped, projectCount }: Readonly<{ health: HealthData; scoped: boolean; projectCount: number }>) {
   const first = scoped
     ? { value: `${health.passRate}%`, label: 'Pass rate', color: 'var(--color-pass)' }
     : { value: String(projectCount), label: 'Proyectos', color: 'var(--color-primary)' };
@@ -89,8 +89,8 @@ function formatSpecName(specPath: string): string {
 }
 
 interface RunCardProps {
-  run: RunSummary;
-  href: string;
+  readonly run: RunSummary;
+  readonly href: string;
 }
 
 function RunCard({ run, href }: RunCardProps) {
@@ -136,13 +136,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!projectRoot) {
+    if (projectRoot) {
+      localStorage.setItem(LAST_PROJECT_KEY, projectRoot);
+    } else {
       const last = localStorage.getItem(LAST_PROJECT_KEY);
       if (last) {
         navigate(`/?projectRoot=${encodeURIComponent(last)}`, { replace: true });
       }
-    } else {
-      localStorage.setItem(LAST_PROJECT_KEY, projectRoot);
     }
   }, [projectRoot, navigate]);
 
