@@ -160,14 +160,21 @@ interface PwAttachment {
 
 interface PwTestResult {
   status?: string;
+  duration?: number;
   errors?: PwError[];
   attachments?: PwAttachment[];
 }
 
-interface PwTestCase {
-  title?: string;
+// One entry per Playwright project (browser). status: 'expected'|'unexpected'|'skipped'|'flaky'
+interface PwTest {
   status?: string;
   results?: PwTestResult[];
+}
+
+interface PwTestCase {
+  title?: string;
+  ok?: boolean;
+  tests?: PwTest[];
 }
 
 interface PwSuite {
@@ -226,12 +233,14 @@ function extractFailures(suites: PwSuite[] | undefined, fileHint = ''): TestFail
 
     // Walk each test spec in this suite.
     for (const spec of suite.specs ?? []) {
-      const failed = spec.results?.some(
+      // spec.tests has one entry per Playwright project; each has results[].
+      const allResults = spec.tests?.flatMap((t) => t.results ?? []) ?? [];
+      const failed = allResults.some(
         (r) => r.status === 'failed' || r.status === 'timedOut',
       );
       if (!failed) continue;
 
-      const firstFailedResult = spec.results?.find(
+      const firstFailedResult = allResults.find(
         (r) => r.status === 'failed' || r.status === 'timedOut',
       );
       const firstError = firstFailedResult?.errors?.[0];
@@ -254,6 +263,40 @@ function extractFailures(suites: PwSuite[] | undefined, fileHint = ''): TestFail
   }
 
   return failures;
+}
+
+/**
+ * Walks the nested `suites` tree and returns a `test_result` event for every
+ * test case. Used after JSON report parsing to populate the run store reliably,
+ * regardless of line-reporter output format differences across platforms.
+ */
+function extractTestEvents(suites: PwSuite[] | undefined): RunEvent[] {
+  if (!suites) return [];
+  const events: RunEvent[] = [];
+
+  for (const suite of suites) {
+    if (suite.suites) events.push(...extractTestEvents(suite.suites));
+    for (const spec of suite.specs ?? []) {
+      const title = spec.title ?? '(unnamed)';
+      // spec.tests[0] is the first project run; its last result holds the real status + duration.
+      const firstTest = spec.tests?.[0];
+      const results = firstTest?.results ?? [];
+      const lastResult = results[results.length - 1];
+      const rawStatus = lastResult?.status ?? firstTest?.status;
+      const status =
+        rawStatus === 'passed'     ? 'passed'   :
+        rawStatus === 'expected'   ? 'passed'   :
+        rawStatus === 'timedOut'   ? 'timedOut' :
+        rawStatus === 'skipped'    ? 'pending'  :
+        rawStatus === 'unexpected' ? 'failed'   :
+        'failed';
+      events.push({
+        type: 'test_result',
+        payload: { title, status, durationMs: lastResult?.duration ?? 0 },
+      });
+    }
+  }
+  return events;
 }
 
 // ---------------------------------------------------------------------------
@@ -601,6 +644,13 @@ export async function spawnPlaywright(
         durationMs: durationFromReport,
         rawOutput,
       };
+      // Emit a test_result event for every test so run-store always has the
+      // full list, regardless of whether the line-reporter output was parsed.
+      if (onEvent) {
+        for (const event of extractTestEvents(report.suites)) {
+          onEvent(event);
+        }
+      }
       onEvent?.({ type: 'run_completed', payload: result as unknown as Record<string, unknown> });
       resolve(result);
     });
