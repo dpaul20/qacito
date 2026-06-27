@@ -13,7 +13,7 @@ function AppShell() {
     <>
       <nav className="nav">
         <div className="nav-brand">
-          <span className="nav-logo">9ea</span>
+          <span className="nav-logo">🧪</span>
           <span className="nav-title">QAcito</span>
         </div>
         <div className="nav-links">

@@ -14,3 +14,5 @@ openspec/
 qacito-report-*
 qacito-self-eval-report.json
 qacito_tests/
+.playwright-mcp/
+*.png

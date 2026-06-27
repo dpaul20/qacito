@@ -256,7 +256,11 @@ export default function Run() {
   }
 
   const testList = [...tests.values()];
-  const specName = run.specPath.split(/[/\\]/).pop() ?? run.specPath;
+  const rawFilename = run.specPath.split(/[/\\]/).pop() ?? run.specPath;
+  const specName = rawFilename
+    .replace(/\.(spec|test)\.(ts|js|tsx|jsx)$/, '')
+    .replace(/\.(spec|test)$/, '')
+    .replace(/_/g, ' ');
   const backHref = projectRootParam
     ? `/?projectRoot=${encodeURIComponent(projectRootParam)}`
     : '/';
@@ -265,10 +269,10 @@ export default function Run() {
     <div className="container">
       <div className="run-header card">
         <div className="run-header-left">
-          <Link to={backHref} className="back-link">← Runs</Link>
-          <h1 className="run-title">{specName}</h1>
-          <p className="run-path">{run.specPath}</p>
-          <p className="run-project">Proyecto: <code>{run.projectRoot}</code></p>
+          <Link to={backHref} className="qa-back">← Runs</Link>
+          <h1 className="qa-run-title">{specName}</h1>
+          <p className="qa-run-pathline">{run.specPath}</p>
+          <p className="qa-run-projline">Proyecto: <code>{run.projectRoot}</code></p>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button className="qa-rerun-btn" onClick={() => setQueued('all')}>↻ Re-ejecutar</button>
             {run.failed > 0 && (
@@ -279,23 +283,23 @@ export default function Run() {
         </div>
         <div className="run-header-right">
           <StatusBadge status={liveStatus} pulse={isLive} />
-          {isLive && <span className="run-timer">{timer}</span>}
-          {!isLive && <span className="run-timer">{formatMs(run.durationMs)}</span>}
+          {isLive && <span className="qa-timer">{timer}</span>}
+          {!isLive && <span className="qa-timer">{formatMs(run.durationMs)}</span>}
         </div>
       </div>
 
-      <div className="summary-row">
-        <div className="summary-box pass">
-          <span className="summary-value">{liveSummary.passed}</span>
-          <span className="summary-label">✅ Pasó</span>
+      <div className="qa-summary-row">
+        <div className="qa-summary-box pass">
+          <span className="qa-summary-value">{liveSummary.passed}</span>
+          <span className="qa-summary-label">✅ Pasó</span>
         </div>
-        <div className="summary-box fail">
-          <span className="summary-value">{liveSummary.failed}</span>
-          <span className="summary-label">❌ Falló</span>
+        <div className="qa-summary-box fail">
+          <span className="qa-summary-value">{liveSummary.failed}</span>
+          <span className="qa-summary-label">❌ Falló</span>
         </div>
-        <div className="summary-box pending">
-          <span className="summary-value">{isLive ? liveSummary.pending : run.skipped}</span>
-          <span className="summary-label">{isLive ? '⏳ Pendiente' : '⏩ Skipped'}</span>
+        <div className="qa-summary-box pending">
+          <span className="qa-summary-value">{isLive ? liveSummary.pending : run.skipped}</span>
+          <span className="qa-summary-label">{isLive ? '⏳ Pendiente' : '⏩ Skipped'}</span>
         </div>
       </div>
 
@@ -309,7 +313,7 @@ export default function Run() {
 
       {testList.length > 0 && (
         <div className="card test-list">
-          <h2>Resultados</h2>
+          <h2 className="qa-section-title">Resultados</h2>
           {testList.map((t) => (
             <TestRow
               key={t.id}

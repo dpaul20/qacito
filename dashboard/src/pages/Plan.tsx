@@ -42,6 +42,7 @@ function CoverageBlock({ coverage }: { coverage: Coverage }) {
         <div className="qa-coverage-gaps">
           <span className="qa-coverage-gaps-label">Sin cobertura:</span>
           {coverage.uncovered.map((f, i) => <span key={i} className="qa-gap-chip">{f}</span>)}
+          <button className="qa-gap-action">Generar tests faltantes →</button>
         </div>
       )}
     </div>
@@ -94,46 +95,46 @@ export default function Plan() {
 
   return (
     <div className="container">
-      <div className="plan-header card">
-        <div>
-          <h1>{plan.projectName}</h1>
-          <p className="plan-meta">
-            {plan.testCases.length} test cases &nbsp;·&nbsp;
-            {plan.techStack.join(', ')} &nbsp;·&nbsp;
-            Base URL: <code>{plan.baseUrl}</code>
-          </p>
-          <p className="plan-project-root">Proyecto: <code>{plan.projectRoot}</code></p>
-          {!projectRoot && (
-            <p className="plan-warning">
-              Vista sin filtro de proyecto. Este plan puede corresponder al proyecto ms reciente, no necesariamente al actual.
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <h1 className="qa-h1">{plan.projectName}</h1>
+            <p className="qa-subtitle">
+              {plan.testCases.length} test cases · {plan.techStack.join(', ')} · Base URL: <code>{plan.baseUrl}</code>
             </p>
-          )}
-        </div>
-        <div className="plan-tags">
-          {plan.techStack.map((t) => (
-            <span key={t} className="plan-tag">{t}</span>
-          ))}
+            <p className="qa-run-projline">Proyecto: <code>{plan.projectRoot}</code></p>
+            {!projectRoot && (
+              <p className="plan-warning">
+                Vista sin filtro de proyecto. Este plan puede corresponder al proyecto más reciente.
+              </p>
+            )}
+          </div>
+          <div className="qa-plan-tags">
+            {plan.techStack.map((t) => (
+              <span key={t} className="qa-plan-tag">{t}</span>
+            ))}
+          </div>
         </div>
         {plan.coverage && <CoverageBlock coverage={plan.coverage} />}
       </div>
 
-      <div className="tc-list">
+      <div className="qa-tc-list">
         {plan.testCases.map((tc) => (
-          <div key={tc.id} className="tc-card card">
+          <div key={tc.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <button
-              className="tc-header"
+              className="qa-tc-header"
               onClick={() => setExpandedId(expandedId === tc.id ? null : tc.id)}
             >
-              <span className="tc-id">{tc.id}</span>
-              <span className="tc-title">{tc.title}</span>
-              <span className="tc-category">{tc.category}</span>
-              <span className="tc-chevron">{expandedId === tc.id ? '▲' : '▼'}</span>
+              <span className="qa-tc-id">{tc.id}</span>
+              <span className="qa-tc-title">{tc.title}</span>
+              <span className="qa-tc-cat">{tc.category}</span>
+              <span className="qa-chevron">{expandedId === tc.id ? '▲' : '▼'}</span>
             </button>
             {expandedId === tc.id && (
-              <div className="tc-body">
-                <p className="tc-description">{tc.description}</p>
-                <p className="tc-url">URL: <code>{tc.url}</code></p>
-                <ol className="tc-steps">
+              <div className="qa-tc-body">
+                <p className="qa-tc-desc">{tc.description}</p>
+                <p className="qa-tc-url">URL: <code>{tc.url}</code></p>
+                <ol className="qa-tc-steps">
                   {tc.steps.map((step, i) => (
                     <li key={i}>{step}</li>
                   ))}
