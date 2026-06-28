@@ -1,15 +1,10 @@
-import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { viewRunResultsSchema } from './schema.js';
 import { viewRunResultsHandler, RunNotFoundError, NoRunsError } from './handler.js';
+import { registerHtmlResource } from '../../shared/register-app-resource.js';
 
 const RESOURCE_URI = 'ui://view-run-results/mcp-app.html';
-
-// Compiled to dist/tools/view-run-results/index.js  →  ../../.. → project root
-// But mcp-app.html lives in dist/, so we go up only two levels: ../..
-const DIST_DIR = path.join(import.meta.dirname, '../..');
 
 export function register(server: McpServer): void {
   registerAppTool(
@@ -52,17 +47,5 @@ export function register(server: McpServer): void {
     },
   );
 
-  registerAppResource(
-    server,
-    'View Run Results UI',
-    RESOURCE_URI,
-    { mimeType: RESOURCE_MIME_TYPE },
-    async () => {
-      const htmlPath = path.join(DIST_DIR, 'view-run-results.html');
-      const html = await fs.readFile(htmlPath, 'utf-8');
-      return {
-        contents: [{ uri: RESOURCE_URI, mimeType: RESOURCE_MIME_TYPE, text: html }],
-      };
-    },
-  );
+  registerHtmlResource(server, 'View Run Results UI', RESOURCE_URI, 'view-run-results.html');
 }
