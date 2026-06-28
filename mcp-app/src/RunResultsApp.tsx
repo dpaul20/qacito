@@ -1,8 +1,9 @@
 import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import { useApp } from '@modelcontextprotocol/ext-apps/react';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { useEffect, useState } from 'react';
-import { containerStyle, findTextContent } from './utils.js';
+import { useState } from 'react';
+import { AppShell } from './AppShell.js';
+import { containerStyle, findTextContent, useHostContext } from './utils.js';
 
 // ── Types mirrored from run-store (no import — UI bundle is self-contained) ──
 
@@ -222,57 +223,35 @@ export function RunResultsApp() {
     },
   });
 
-  useEffect(() => {
-    if (app) {
-      setHostContext(app.getHostContext());
-    }
-  }, [app]);
+  useHostContext(app, setHostContext);
 
   const style = containerStyle(hostContext?.safeAreaInsets);
 
-  if (error) {
-    return (
-      <div style={style}>
-        <p style={{ color: 'var(--color-fail-text)' }}>
-          <strong>Connection error:</strong> {error.message}
-        </p>
-      </div>
-    );
-  }
-
-  if (!app) {
-    return (
-      <div style={style}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Connecting…</p>
-      </div>
-    );
-  }
-
-  if (!run) {
-    return (
-      <div style={style}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-          No run data yet. Call <code>view_run_results</code> to display results.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div style={style}>
-      <RunHeader run={run} />
-      <SummaryBar run={run} />
-      <TestList tests={run.tests} />
-      <StringList
-        items={run.regressions ?? []}
-        label="Regressions"
-        color="var(--color-warn-text)"
-      />
-      <StringList
-        items={run.recovered ?? []}
-        label="Recovered"
-        color="var(--color-pass-text)"
-      />
-    </div>
+    <AppShell style={style} app={app} error={error}>
+      {!run ? (
+        <div style={style}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+            No run data yet. Call <code>view_run_results</code> to display results.
+          </p>
+        </div>
+      ) : (
+        <div style={style}>
+          <RunHeader run={run} />
+          <SummaryBar run={run} />
+          <TestList tests={run.tests} />
+          <StringList
+            items={run.regressions ?? []}
+            label="Regressions"
+            color="var(--color-warn-text)"
+          />
+          <StringList
+            items={run.recovered ?? []}
+            label="Recovered"
+            color="var(--color-pass-text)"
+          />
+        </div>
+      )}
+    </AppShell>
   );
 }

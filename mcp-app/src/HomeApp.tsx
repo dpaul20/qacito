@@ -1,7 +1,8 @@
 import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import { useApp } from '@modelcontextprotocol/ext-apps/react';
-import { useEffect, useState } from 'react';
-import { containerStyle, findTextContent } from './utils.js';
+import { useState } from 'react';
+import { AppShell } from './AppShell.js';
+import { containerStyle, findTextContent, useHostContext } from './utils.js';
 
 // ── Card data ─────────────────────────────────────────────────────────────────
 
@@ -146,31 +147,9 @@ export function HomeApp() {
     },
   });
 
-  useEffect(() => {
-    if (app) {
-      setHostContext(app.getHostContext());
-    }
-  }, [app]);
+  useHostContext(app, setHostContext);
 
   const style = containerStyle(hostContext?.safeAreaInsets);
-
-  if (error) {
-    return (
-      <div style={style}>
-        <p style={{ color: 'var(--color-fail-text)' }}>
-          <strong>Connection error:</strong> {error.message}
-        </p>
-      </div>
-    );
-  }
-
-  if (!app) {
-    return (
-      <div style={style}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Connecting…</p>
-      </div>
-    );
-  }
 
   function handleCardClick(prompt: string) {
     app
@@ -186,6 +165,7 @@ export function HomeApp() {
   }
 
   return (
+    <AppShell style={style} app={app} error={error}>
     <div style={style}>
       {/* Header */}
       <div style={{ marginBottom: '1.5rem' }}>
@@ -275,5 +255,6 @@ export function HomeApp() {
         ))}
       </div>
     </div>
+    </AppShell>
   );
 }

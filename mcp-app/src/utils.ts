@@ -1,7 +1,19 @@
 import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
+import { useEffect } from 'react';
 import type React from 'react';
 
 type SafeArea = McpUiHostContext['safeAreaInsets'];
+
+type AppLike = { getHostContext: () => McpUiHostContext };
+
+export function useHostContext(
+  app: AppLike | null | undefined,
+  setHostContext: React.Dispatch<React.SetStateAction<McpUiHostContext | undefined>>,
+): void {
+  useEffect(() => {
+    if (app) setHostContext(app.getHostContext());
+  }, [app, setHostContext]);
+}
 
 export function containerStyle(safeArea: SafeArea): React.CSSProperties {
   return {
