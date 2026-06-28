@@ -9,8 +9,9 @@
   },
   "scripts": {
     "build": "tsc && node scripts/copy-public.js",
+    "build:mcp-app": "cd mcp-app && npm install && npm run build",
     "build:dashboard": "cd dashboard && npm install && npx vite build",
-    "build:all": "npm run build:dashboard && npm run build",
+    "build:all": "npm run build:mcp-app && npm run build:dashboard && npm run build",
     "start": "node dist/server/index.js",
     "start:http": "QACITO_HTTP_PORT=4712 node dist/server/index.js",
     "build:mcpb": "npm run build:all && node scripts/build-mcpb.js",
@@ -22,6 +23,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
+    "@modelcontextprotocol/ext-apps": "^1.7.4",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
