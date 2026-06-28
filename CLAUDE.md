@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build (TypeScript only)
 npm run build
 
-# Build dashboard + TypeScript
+# Build mcp-app → dashboard → TypeScript (in order)
 npm run build:all
 
 # Run MCP server (stdio transport)
@@ -22,6 +22,9 @@ npx playwright test
 
 # Run a single test file
 npx playwright test src/tools/run-tests/retry-tracker.test.ts
+
+# Build only the MCP App React bundle
+npm run build:mcp-app
 
 # Build .mcpb distributable
 npm run build:mcpb
@@ -99,6 +102,20 @@ All writes are atomic OS-level (append/overwrite, not partial). Do not add `awai
 ### Error handling
 
 Handlers throw typed domain errors (`PathOutOfBoundsError`, `SpecNotFoundError`). Batch operations return per-item errors rather than aborting — for example, `read_files` returns an error field per file, never fails the whole call. The MCP registration layer converts thrown errors to `isError: true` responses.
+
+### MCP Apps
+
+`mcp-app/` is a separate Vite workspace that builds self-contained HTML bundles served as MCP resources. When a host like Claude Desktop calls an MCP App tool, it renders the returned HTML as interactive UI in its side panel.
+
+**How MCP App tools differ from regular tools:**
+- Use `registerAppTool` + `registerAppResource` from `@modelcontextprotocol/ext-apps/server` instead of `server.tool()`
+- The tool result includes `_meta.ui.resourceUri` pointing to a `ui://` URI
+- The resource handler reads the compiled HTML from `dist/mcp-app.html` and returns it with `RESOURCE_MIME_TYPE`
+- `DIST_DIR` in `index.ts` must point 2 levels up from `dist/tools/{name}/` to reach `dist/`
+
+**Critical:** in the React app (`mcp-app/src/`), register ALL handlers before `app.connect()` is called — handlers set after connect are silently ignored.
+
+Currently implemented: `view_run_results` → resource URI `ui://view-run-results/mcp-app.html`.
 
 ### Test conventions
 
