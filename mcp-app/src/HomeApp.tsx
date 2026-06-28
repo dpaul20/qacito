@@ -112,10 +112,10 @@ interface HomeMeta {
 }
 
 function parseMeta(result: { content?: Array<{ type: string; text?: string }> }): HomeMeta | null {
-  const item = result.content?.find((c) => c.type === 'text');
-  if (!item || item.type !== 'text' || item.text === undefined) return null;
+  const text = result.content?.find((c) => c.type === 'text')?.text;
+  if (text === undefined) return null;
   try {
-    return JSON.parse(item.text) as HomeMeta;
+    return JSON.parse(text) as HomeMeta;
   } catch {
     return null;
   }
@@ -154,10 +154,10 @@ export function HomeApp() {
   const safeArea = hostContext?.safeAreaInsets;
   const containerStyle: React.CSSProperties = {
     padding: '1rem',
-    paddingTop: safeArea?.top !== undefined ? `${safeArea.top}px` : '1rem',
-    paddingRight: safeArea?.right !== undefined ? `${safeArea.right}px` : '1rem',
-    paddingBottom: safeArea?.bottom !== undefined ? `${safeArea.bottom}px` : '1rem',
-    paddingLeft: safeArea?.left !== undefined ? `${safeArea.left}px` : '1rem',
+    paddingTop: safeArea?.top === undefined ? '1rem' : `${safeArea.top}px`,
+    paddingRight: safeArea?.right === undefined ? '1rem' : `${safeArea.right}px`,
+    paddingBottom: safeArea?.bottom === undefined ? '1rem' : `${safeArea.bottom}px`,
+    paddingLeft: safeArea?.left === undefined ? '1rem' : `${safeArea.left}px`,
     maxWidth: '720px',
     margin: '0 auto',
     fontFamily: 'var(--font-sans)',
@@ -182,12 +182,15 @@ export function HomeApp() {
   }
 
   function handleCardClick(prompt: string) {
-    void app
+    app
       ?.sendMessage({ role: 'user', content: [{ type: 'text', text: prompt }] })
       .then((r) => {
         if (r.isError === true) {
           console.error('[HomeApp] sendMessage rejected', r);
         }
+      })
+      .catch((err: unknown) => {
+        console.error('[HomeApp] sendMessage error:', err);
       });
   }
 

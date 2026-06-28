@@ -36,10 +36,10 @@ interface RunDetail {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseRun(result: CallToolResult): RunDetail | null {
-  const textItem = result.content?.find((c) => c.type === 'text');
-  if (!textItem || textItem.type !== 'text') return null;
+  const text = result.content?.find((c) => c.type === 'text')?.text;
+  if (text === undefined) return null;
   try {
-    return JSON.parse(textItem.text) as RunDetail;
+    return JSON.parse(text) as RunDetail;
   } catch {
     return null;
   }
@@ -73,7 +73,7 @@ const STATUS_COLORS: Record<RunStatus, { bg: string; text: string }> = {
   blocked: { bg: 'var(--color-skip-bg)',    text: 'var(--color-skip-text)' },
 };
 
-function TestIcon({ status }: { status: TestStatus }) {
+function TestIcon({ status }: Readonly<{ status: TestStatus }>) {
   if (status === 'passed')   return <span style={{ color: 'var(--color-pass-text)' }}>✓</span>;
   if (status === 'failed')   return <span style={{ color: 'var(--color-fail-text)' }}>✗</span>;
   if (status === 'timedOut') return <span style={{ color: 'var(--color-warn-text)' }}>⏱</span>;
@@ -82,7 +82,7 @@ function TestIcon({ status }: { status: TestStatus }) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function RunHeader({ run }: { run: RunDetail }) {
+function RunHeader({ run }: Readonly<{ run: RunDetail }>) {
   const colors = STATUS_COLORS[run.status] ?? STATUS_COLORS.error;
   return (
     <div style={{ marginBottom: '1rem' }}>
@@ -111,7 +111,7 @@ function RunHeader({ run }: { run: RunDetail }) {
   );
 }
 
-function SummaryBar({ run }: { run: RunDetail }) {
+function SummaryBar({ run }: Readonly<{ run: RunDetail }>) {
   return (
     <div style={{
       display: 'flex',
@@ -132,7 +132,7 @@ function SummaryBar({ run }: { run: RunDetail }) {
   );
 }
 
-function TestList({ tests }: { tests: TestResult[] }) {
+function TestList({ tests }: Readonly<{ tests: TestResult[] }>) {
   if (tests.length === 0) {
     return <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>No test results yet.</p>;
   }
@@ -184,7 +184,7 @@ function TestList({ tests }: { tests: TestResult[] }) {
   );
 }
 
-function StringList({ items, label, color }: { items: string[]; label: string; color: string }) {
+function StringList({ items, label, color }: Readonly<{ items: string[]; label: string; color: string }>) {
   if (items.length === 0) return null;
   return (
     <div style={{ marginTop: '1rem' }}>
@@ -230,10 +230,10 @@ export function RunResultsApp() {
   const safeArea = hostContext?.safeAreaInsets;
   const containerStyle: React.CSSProperties = {
     padding: '1rem',
-    paddingTop: safeArea?.top !== undefined ? `${safeArea.top}px` : '1rem',
-    paddingRight: safeArea?.right !== undefined ? `${safeArea.right}px` : '1rem',
-    paddingBottom: safeArea?.bottom !== undefined ? `${safeArea.bottom}px` : '1rem',
-    paddingLeft: safeArea?.left !== undefined ? `${safeArea.left}px` : '1rem',
+    paddingTop: safeArea?.top === undefined ? '1rem' : `${safeArea.top}px`,
+    paddingRight: safeArea?.right === undefined ? '1rem' : `${safeArea.right}px`,
+    paddingBottom: safeArea?.bottom === undefined ? '1rem' : `${safeArea.bottom}px`,
+    paddingLeft: safeArea?.left === undefined ? '1rem' : `${safeArea.left}px`,
     maxWidth: '720px',
     margin: '0 auto',
     fontFamily: 'var(--font-sans)',
