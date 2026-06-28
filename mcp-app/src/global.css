@@ -1,0 +1,69 @@
+:root {
+  color-scheme: light dark;
+
+  /* Host-provided variables with light/dark fallbacks */
+  --font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+  --font-text-md-size: 1rem;
+  --font-text-md-line-height: 1.5;
+
+  /* Background & surface */
+  --color-bg:      light-dark(#ffffff, #1a1a1a);
+  --color-surface: light-dark(#f4f4f5, #2a2a2a);
+
+  /* Text */
+  --color-text:       light-dark(#111827, #f3f4f6);
+  --color-text-muted: light-dark(#6b7280, #9ca3af);
+
+  /* Status: pass */
+  --color-pass-bg:   light-dark(#dcfce7, #14532d);
+  --color-pass-text: light-dark(#15803d, #4ade80);
+
+  /* Status: fail */
+  --color-fail-bg:   light-dark(#fee2e2, #450a0a);
+  --color-fail-text: light-dark(#b91c1c, #f87171);
+
+  /* Status: skip / blocked */
+  --color-skip-bg:   light-dark(#f3f4f6, #374151);
+  --color-skip-text: light-dark(#6b7280, #9ca3af);
+
+  /* Status: running / warning */
+  --color-run-bg:  light-dark(#dbeafe, #1e3a5f);
+  --color-run-text: light-dark(#1d4ed8, #60a5fa);
+
+  /* Warning / regression */
+  --color-warn-bg:   light-dark(#fef3c7, #451a03);
+  --color-warn-text: light-dark(#b45309, #fbbf24);
+
+  /* Accent: purple */
+  --color-accent-purple: light-dark(#9854cb, #bb9af7);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--font-text-md-size);
+  line-height: var(--font-text-md-line-height);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+}
+
+code, pre, kbd {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+b, strong {
+  font-weight: var(--font-weight-bold);
+}

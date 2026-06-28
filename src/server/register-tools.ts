@@ -36,6 +36,8 @@ import { register as registerCheckEnvironment }      from '../tools/check-enviro
 import { register as registerDiscoverRoutes }        from '../tools/discover-routes/index.js';
 import { register as registerSetupAuth }             from '../tools/setup-auth/index.js';
 import { register as registerDualEvaluate }          from '../tools/dual-evaluate/index.js';
+import { register as registerViewRunResults }        from '../tools/view-run-results/index.js';
+import { register as registerQacitoHome }           from '../tools/qacito-home/index.js';
 
 type RegisterFn = (server: McpServer) => void;
 
@@ -61,6 +63,8 @@ const slices: Array<{ name: string; register: RegisterFn }> = [
   { name: 'discover_routes',         register: registerDiscoverRoutes },
   { name: 'setup_auth',              register: registerSetupAuth },
   { name: 'dual_evaluate',           register: registerDualEvaluate },
+  { name: 'view_run_results',        register: registerViewRunResults },
+  { name: 'qacito_home',             register: registerQacitoHome },
 ];
 
 /**
