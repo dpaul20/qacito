@@ -1,9 +1,6 @@
-import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
-import { useApp } from '@modelcontextprotocol/ext-apps/react';
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { useState } from 'react';
 import { AppShell } from './AppShell.js';
-import { containerStyle, findTextContent, useHostContext } from './utils.js';
+import { parseJson, useMcpApp } from './utils.js';
 
 // ── Types mirrored from run-store (no import — UI bundle is self-contained) ──
 
@@ -37,15 +34,6 @@ interface RunDetail {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function parseRun(result: CallToolResult): RunDetail | null {
-  const text = findTextContent(result);
-  if (text === undefined) return null;
-  try {
-    return JSON.parse(text) as RunDetail;
-  } catch {
-    return null;
-  }
-}
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -202,30 +190,11 @@ function StringList({ items, label, color }: Readonly<{ items: string[]; label: 
 
 export function RunResultsApp() {
   const [run, setRun] = useState<RunDetail | null>(null);
-  const [hostContext, setHostContext] = useState<McpUiHostContext | undefined>();
 
-  const { app, error } = useApp({
-    appInfo: { name: 'QAcito Run Results', version: '1.0.0' },
-    capabilities: {},
-    onAppCreated: (appInstance) => {
-      appInstance.ontoolresult = async (result) => {
-        const parsed = parseRun(result);
-        if (parsed) setRun(parsed);
-      };
-
-      appInstance.onhostcontextchanged = (params) => {
-        setHostContext((prev) => ({ ...prev, ...params }));
-      };
-
-      appInstance.onerror = (err) => {
-        console.error('[RunResultsApp] error:', err);
-      };
-    },
+  const { app, error, style } = useMcpApp('QAcito Run Results', (result) => {
+    const parsed = parseJson<RunDetail>(result);
+    if (parsed) setRun(parsed);
   });
-
-  useHostContext(app, setHostContext);
-
-  const style = containerStyle(hostContext?.safeAreaInsets);
 
   return (
     <AppShell style={style} app={app} error={error}>

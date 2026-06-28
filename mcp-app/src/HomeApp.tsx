@@ -1,8 +1,6 @@
-import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
-import { useApp } from '@modelcontextprotocol/ext-apps/react';
 import { useState } from 'react';
 import { AppShell } from './AppShell.js';
-import { containerStyle, findTextContent, useHostContext } from './utils.js';
+import { parseJson, useMcpApp } from './utils.js';
 
 // ── Card data ─────────────────────────────────────────────────────────────────
 
@@ -113,43 +111,13 @@ interface HomeMeta {
   projectRoot: string | null;
 }
 
-function parseMeta(result: { content?: Array<{ type: string; text?: string }> }): HomeMeta | null {
-  const text = findTextContent(result);
-  if (text === undefined) return null;
-  try {
-    return JSON.parse(text) as HomeMeta;
-  } catch {
-    return null;
-  }
-}
-
 export function HomeApp() {
-  const [hostContext, setHostContext] = useState<McpUiHostContext | undefined>();
   const [meta, setMeta] = useState<HomeMeta | null>(null);
 
-  const { app, error } = useApp({
-    appInfo: { name: 'QAcito Home', version: '1.0.0' },
-    capabilities: {},
-    onAppCreated: (appInstance) => {
-      // Register ALL handlers BEFORE connect() is called — these are one-shot events
-      appInstance.ontoolresult = async (result) => {
-        const parsed = parseMeta(result);
-        if (parsed) setMeta(parsed);
-      };
-
-      appInstance.onhostcontextchanged = (params) => {
-        setHostContext((prev) => ({ ...prev, ...params }));
-      };
-
-      appInstance.onerror = (err) => {
-        process.stderr.write(`[HomeApp] error: ${String(err)}\n`);
-      };
-    },
+  const { app, error, style } = useMcpApp('QAcito Home', (result) => {
+    const parsed = parseJson<HomeMeta>(result);
+    if (parsed) setMeta(parsed);
   });
-
-  useHostContext(app, setHostContext);
-
-  const style = containerStyle(hostContext?.safeAreaInsets);
 
   function handleCardClick(prompt: string) {
     app
