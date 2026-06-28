@@ -1,6 +1,7 @@
 import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import { useApp } from '@modelcontextprotocol/ext-apps/react';
 import { useEffect, useState } from 'react';
+import { containerStyle, findTextContent } from './utils.js';
 
 // ── Card data ─────────────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ interface HomeMeta {
 }
 
 function parseMeta(result: { content?: Array<{ type: string; text?: string }> }): HomeMeta | null {
-  const text = result.content?.find((c) => c.type === 'text')?.text;
+  const text = findTextContent(result);
   if (text === undefined) return null;
   try {
     return JSON.parse(text) as HomeMeta;
@@ -151,21 +152,11 @@ export function HomeApp() {
     }
   }, [app]);
 
-  const safeArea = hostContext?.safeAreaInsets;
-  const containerStyle: React.CSSProperties = {
-    padding: '1rem',
-    paddingTop: safeArea?.top === undefined ? '1rem' : `${safeArea.top}px`,
-    paddingRight: safeArea?.right === undefined ? '1rem' : `${safeArea.right}px`,
-    paddingBottom: safeArea?.bottom === undefined ? '1rem' : `${safeArea.bottom}px`,
-    paddingLeft: safeArea?.left === undefined ? '1rem' : `${safeArea.left}px`,
-    maxWidth: '720px',
-    margin: '0 auto',
-    fontFamily: 'var(--font-sans)',
-  };
+  const style = containerStyle(hostContext?.safeAreaInsets);
 
   if (error) {
     return (
-      <div style={containerStyle}>
+      <div style={style}>
         <p style={{ color: 'var(--color-fail-text)' }}>
           <strong>Connection error:</strong> {error.message}
         </p>
@@ -175,7 +166,7 @@ export function HomeApp() {
 
   if (!app) {
     return (
-      <div style={containerStyle}>
+      <div style={style}>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Connecting…</p>
       </div>
     );
@@ -195,7 +186,7 @@ export function HomeApp() {
   }
 
   return (
-    <div style={containerStyle}>
+    <div style={style}>
       {/* Header */}
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

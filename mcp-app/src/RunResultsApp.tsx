@@ -2,6 +2,7 @@ import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import { useApp } from '@modelcontextprotocol/ext-apps/react';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { useEffect, useState } from 'react';
+import { containerStyle, findTextContent } from './utils.js';
 
 // ── Types mirrored from run-store (no import — UI bundle is self-contained) ──
 
@@ -36,7 +37,7 @@ interface RunDetail {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseRun(result: CallToolResult): RunDetail | null {
-  const text = result.content?.find((c) => c.type === 'text')?.text;
+  const text = findTextContent(result);
   if (text === undefined) return null;
   try {
     return JSON.parse(text) as RunDetail;
@@ -227,21 +228,11 @@ export function RunResultsApp() {
     }
   }, [app]);
 
-  const safeArea = hostContext?.safeAreaInsets;
-  const containerStyle: React.CSSProperties = {
-    padding: '1rem',
-    paddingTop: safeArea?.top === undefined ? '1rem' : `${safeArea.top}px`,
-    paddingRight: safeArea?.right === undefined ? '1rem' : `${safeArea.right}px`,
-    paddingBottom: safeArea?.bottom === undefined ? '1rem' : `${safeArea.bottom}px`,
-    paddingLeft: safeArea?.left === undefined ? '1rem' : `${safeArea.left}px`,
-    maxWidth: '720px',
-    margin: '0 auto',
-    fontFamily: 'var(--font-sans)',
-  };
+  const style = containerStyle(hostContext?.safeAreaInsets);
 
   if (error) {
     return (
-      <div style={containerStyle}>
+      <div style={style}>
         <p style={{ color: 'var(--color-fail-text)' }}>
           <strong>Connection error:</strong> {error.message}
         </p>
@@ -251,7 +242,7 @@ export function RunResultsApp() {
 
   if (!app) {
     return (
-      <div style={containerStyle}>
+      <div style={style}>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Connecting…</p>
       </div>
     );
@@ -259,7 +250,7 @@ export function RunResultsApp() {
 
   if (!run) {
     return (
-      <div style={containerStyle}>
+      <div style={style}>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
           No run data yet. Call <code>view_run_results</code> to display results.
         </p>
@@ -268,7 +259,7 @@ export function RunResultsApp() {
   }
 
   return (
-    <div style={containerStyle}>
+    <div style={style}>
       <RunHeader run={run} />
       <SummaryBar run={run} />
       <TestList tests={run.tests} />
